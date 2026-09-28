@@ -1,0 +1,36 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+      - name: Test
+        run: python -m pytest -q
+      - name: Build
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name Dota2AssetStudio --icon=assets/Dota2AssetStudio.ico main.py
+      - name: Add starter lists
+        shell: pwsh
+        run: |
+          Copy-Item heroes.txt dist\heroes.txt
+          Copy-Item neutral_creeps.txt dist\neutral_creeps.txt
+          Copy-Item items.txt dist\items.txt
+          New-Item -ItemType Directory -Force dist\output | Out-Null
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dota2AssetStudio-Windows
+          path: dist/Dota2AssetStudio.exe
